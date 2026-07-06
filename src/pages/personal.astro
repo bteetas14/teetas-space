@@ -1,38 +1,69 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import SiteNav from "@/components/SiteNav.astro";
-import PageHeader from "@/components/PageHeader.astro";
 import { currently, passions } from "@/data/personal";
 ---
 
 <BaseLayout title="Personal" room="personal">
-  <main class="shell personal-shell">
-    <SiteNav />
-    <PageHeader
-      eyebrow="Personal room"
-      title="The softer, stranger, more alive side."
-      intro="A place for passions, notes, saved ideas, current obsessions, and the parts of a person that do not fit inside a resume."
-    />
+  <main class="personal-rain-room">
+    <div class="rain-sky" aria-hidden="true">
+      <div class="cloud cloud-one"></div>
+      <div class="cloud cloud-two"></div>
+      <div class="cloud cloud-three"></div>
+      <div class="rain-layer rain-layer-one"></div>
+      <div class="rain-layer rain-layer-two"></div>
+      <div class="mountains mountains-back"></div>
+      <div class="mountains mountains-front"></div>
+    </div>
 
-    <section class="personal-board" aria-label="Passions">
-      {
-        passions.map((item) => (
-          <article>
-            <h2>{item.title}</h2>
-            <p>{item.note}</p>
-          </article>
-        ))
-      }
-    </section>
+    <section class="shell personal-rain-shell" aria-labelledby="personal-title">
+      <a class="rain-back" href="/">back home</a>
 
-    <section class="currently-panel">
-      <div>
-        <p class="eyebrow">Currently</p>
-        <h2>Open loops</h2>
-      </div>
-      <ul>
-        {currently.map((item) => <li>{item}</li>)}
-      </ul>
+      <header class="rain-hero">
+        <p class="eyebrow">Personal room</p>
+        <h1 id="personal-title">Rain Notes</h1>
+        <p>
+          A quieter room for the non-resume parts: ideas, interests, saved lines,
+          current obsessions, and whatever keeps returning on rainy days.
+        </p>
+      </header>
+
+      <section class="rain-window" aria-label="Rain room overview">
+        <div class="window-scene" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div>
+          <p class="eyebrow">Weather</p>
+          <h2>Cloudy with a high chance of overthinking.</h2>
+          <p>
+            This room can later become notes, essays, playlists, book shelves,
+            cycling logs, and small thoughts that do not need to be polished yet.
+          </p>
+        </div>
+      </section>
+
+      <section class="personal-board rain-card-grid" aria-label="Passions">
+        {
+          passions.map((item) => (
+            <article>
+              <span>field note</span>
+              <h2>{item.title}</h2>
+              <p>{item.note}</p>
+            </article>
+          ))
+        }
+      </section>
+
+      <section class="currently-panel rain-currently">
+        <div>
+          <p class="eyebrow">Currently</p>
+          <h2>Things open in the background</h2>
+        </div>
+        <ul>
+          {currently.map((item) => <li>{item}</li>)}
+        </ul>
+      </section>
     </section>
   </main>
 </BaseLayout>

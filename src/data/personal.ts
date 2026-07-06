@@ -5,7 +5,7 @@ export const passions = [
   },
   {
     title: "Reading",
-    note: "Books, essays, saved lines, and ideas that keep returning.",
+    note: "Books, essays, saved lines, and ideas that keep returning after the page is closed.",
   },
   {
     title: "Feminism",
@@ -22,8 +22,8 @@ export const passions = [
 ];
 
 export const currently = [
-  "Building a better personal internet home",
+  "Building a personal internet home room by room",
   "Collecting project notes that can become essays",
   "Making the photobook feel like memory instead of storage",
-  "Keeping the site easy to extend later",
+  "Keeping this site easy to extend after the first deploy",
 ];
