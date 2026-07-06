@@ -1,0 +1,29 @@
+---
+type Props = {
+  title: string;
+  href: string;
+  kicker: string;
+  description: string;
+  theme: string;
+  icon: string;
+  signal: string;
+};
+
+const { title, href, kicker, description, theme, icon, signal } = Astro.props;
+---
+
+<a
+  class={`room-card ${theme}`}
+  href={href}
+  data-room-card
+  data-room-theme={theme}
+  aria-label={`Open ${title}`}
+>
+  <span class="room-card__signal">{signal}</span>
+  <span class="room-card__icon" aria-hidden="true">{icon}</span>
+  <span class="room-card__copy">
+    <span class="room-card__kicker">{kicker}</span>
+    <strong>{title}</strong>
+    <p>{description}</p>
+  </span>
+</a>

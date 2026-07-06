@@ -1,0 +1,172 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { projects, skills, timeline } from "@/data/work";
+---
+
+<BaseLayout title="Work" room="work">
+  <main class="work-terminal-room">
+    <div class="terminal-grid" aria-hidden="true"></div>
+    <div class="terminal-scanline" aria-hidden="true"></div>
+    <div class="work-door work-door--arrival" aria-hidden="true">
+      <div class="work-door__panel work-door__panel-left"></div>
+      <div class="work-door__panel work-door__panel-right"></div>
+      <span>work room ready</span>
+    </div>
+
+    <section class="shell terminal-shell" aria-labelledby="work-title">
+      <a class="terminal-back" href="/">cd ~/home</a>
+
+      <section class="terminal-window">
+        <header class="terminal-titlebar">
+          <div class="terminal-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <span>teetas@space:~/work</span>
+        </header>
+
+        <section class="terminal-screen">
+          <div class="terminal-hero">
+            <p class="terminal-prompt">portfolio console</p>
+            <h1 id="work-title">Work Room</h1>
+            <p>
+              A command-line themed portfolio for projects, skills, and the work I am
+              building. Use the small prompt below to jump around, or scroll normally.
+            </p>
+          </div>
+
+          <section class="command-panel" aria-label="Explore work commands">
+            <p class="command-help">Try a command:</p>
+            <div class="command-suggestions" aria-label="Command suggestions">
+              <button type="button" data-command="projects">projects</button>
+              <button type="button" data-command="skills">skills</button>
+              <button type="button" data-command="timeline">timeline</button>
+              <button type="button" data-command="contact">contact</button>
+            </div>
+
+            <form class="command-input" id="command-input" autocomplete="off">
+              <label for="terminal-command">$</label>
+              <input
+                id="terminal-command"
+                name="command"
+                type="text"
+                placeholder="type projects, skills, timeline, or contact"
+                aria-label="Type a command"
+              />
+              <button type="submit">run</button>
+            </form>
+
+            <div class="command-output" id="command-output" aria-live="polite">
+              <p>Start with <code>projects</code> to see what I have been building.</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="terminal-section" aria-labelledby="projects-title">
+          <div class="terminal-command">
+            <span>$</span>
+            <h2 id="projects-title">projects</h2>
+          </div>
+          <div class="terminal-projects">
+            {
+              projects.map((project) => (
+                <article class="terminal-card">
+                  <div class="terminal-card__meta">
+                    <span>{project.status}</span>
+                    <code>{project.stack.join(" / ")}</code>
+                  </div>
+                  <h3>{project.title}</h3>
+                  <p>{project.summary}</p>
+                </article>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="terminal-split">
+          <div class="terminal-section">
+            <div class="terminal-command">
+              <span>$</span>
+              <h2>skills</h2>
+            </div>
+            <ul class="terminal-skills">
+              {skills.map((skill) => <li>{skill}</li>)}
+            </ul>
+          </div>
+
+          <div class="terminal-section">
+            <div class="terminal-command">
+              <span>$</span>
+              <h2>timeline</h2>
+            </div>
+            <div class="terminal-timeline">
+              {
+                timeline.map((item) => (
+                  <article>
+                    <span>{item.period}</span>
+                    <h3>{item.title}</h3>
+                    <p>{item.detail}</p>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const room = document.querySelector<HTMLElement>(".work-terminal-room");
+    if (window.sessionStorage.getItem("teetas-entering-work") === "true") {
+      window.sessionStorage.removeItem("teetas-entering-work");
+      room?.classList.add("is-arriving-work");
+    }
+
+    const commandForm = document.querySelector<HTMLFormElement>("#command-input");
+    const commandField = document.querySelector<HTMLInputElement>("#terminal-command");
+    const output = document.querySelector<HTMLElement>("#command-output");
+    const suggestionButtons = document.querySelectorAll<HTMLButtonElement>("[data-command]");
+
+    const responses: Record<string, string> = {
+      help: "Try one of these: projects, skills, timeline, contact, clear.",
+      projects: "Projects: Kinly, Bike Map Experiments, Teetas Space.",
+      skills: "Skills: backend systems, product thinking, API design, databases, mobile apps, frontend craft, AI tooling, technical writing.",
+      timeline: "Now: building personal products and a sharper public portfolio. Earlier: systems, interviews, backend fundamentals.",
+      contact: "GitHub: @bteetas14. LinkedIn: teetas-bhuiya-779517191.",
+      clear: "",
+    };
+
+    function runCommand(command: string) {
+      if (!output) return;
+      const normalized = command.trim().toLowerCase();
+
+      if (normalized === "clear") {
+        output.innerHTML = "";
+        return;
+      }
+
+      const response = responses[normalized] ?? "I do not have that command yet. Try projects, skills, timeline, or contact.";
+      output.innerHTML = `
+        <p><span class="output-prompt">$</span> ${normalized || "help"}</p>
+        <p>${response}</p>
+      `;
+    }
+
+    commandForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!commandField) return;
+      runCommand(commandField.value || "help");
+      commandField.value = "";
+    });
+
+    suggestionButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const command = button.dataset.command ?? "help";
+        if (commandField) commandField.value = command;
+        runCommand(command);
+      });
+    });
+  </script>
+</BaseLayout>

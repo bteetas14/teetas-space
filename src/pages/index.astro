@@ -1,0 +1,102 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import RoomCard from "@/components/RoomCard.astro";
+import { rooms } from "@/data/site";
+---
+
+<BaseLayout>
+  <main class="home-stage">
+    <div class="star-field" aria-hidden="true"></div>
+    <div class="orbit orbit-one" aria-hidden="true"></div>
+    <div class="orbit orbit-two" aria-hidden="true"></div>
+    <div class="planet planet-one" aria-hidden="true"></div>
+    <div class="planet planet-two" aria-hidden="true"></div>
+    <div class="comet comet-one" aria-hidden="true"></div>
+    <div class="work-door" aria-hidden="true">
+      <div class="work-door__panel work-door__panel-left"></div>
+      <div class="work-door__panel work-door__panel-right"></div>
+      <span>entering work room</span>
+    </div>
+    <div class="cursor-cat" aria-hidden="true">
+      <div class="cat-tail"></div>
+      <div class="cat-body"></div>
+      <div class="cat-head">
+        <span class="cat-ear cat-ear-left"></span>
+        <span class="cat-ear cat-ear-right"></span>
+        <span class="cat-eye cat-eye-left"></span>
+        <span class="cat-eye cat-eye-right"></span>
+      </div>
+    </div>
+
+    <section class="shell home-room" aria-labelledby="home-title">
+      <header class="home-heading">
+        <p class="eyebrow">Home</p>
+        <h1 id="home-title">Teetas Space</h1>
+        <p>
+          A small personal universe for work, photos, notes, and the things I
+          want to keep building over time. Choose a room and step inside.
+        </p>
+      </header>
+
+      <section class="launcher" aria-label="Rooms">
+        {rooms.map((room) => <RoomCard {...room} />)}
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const cards = document.querySelectorAll<HTMLElement>("[data-room-card]");
+    const cat = document.querySelector<HTMLElement>(".cursor-cat");
+    const stage = document.querySelector<HTMLElement>(".home-stage");
+    let pointerX = window.innerWidth / 2;
+    let pointerY = window.innerHeight / 2;
+    let catX = pointerX - 42;
+    let catY = pointerY - 18;
+
+    cards.forEach((card) => {
+      card.addEventListener("pointermove", (event) => {
+        const rect = card.getBoundingClientRect();
+        const localX = event.clientX - rect.left;
+        const localY = event.clientY - rect.top;
+        const tiltX = ((localY / rect.height) - 0.5) * -8;
+        const tiltY = ((localX / rect.width) - 0.5) * 8;
+        card.style.setProperty("--tilt-x", tiltX + "deg");
+        card.style.setProperty("--tilt-y", tiltY + "deg");
+        card.style.setProperty("--spot-x", localX + "px");
+        card.style.setProperty("--spot-y", localY + "px");
+      });
+
+      card.addEventListener("pointerleave", () => {
+        card.style.removeProperty("--tilt-x");
+        card.style.removeProperty("--tilt-y");
+      });
+
+      card.addEventListener("click", (event) => {
+        if (card.dataset.roomTheme !== "work") return;
+        event.preventDefault();
+        stage?.classList.add("is-opening-work");
+        window.sessionStorage.setItem("teetas-entering-work", "true");
+        window.setTimeout(() => {
+          window.location.href = card.getAttribute("href") ?? "/work";
+        }, 320);
+      });
+    });
+
+    window.addEventListener("pointermove", (event) => {
+      pointerX = event.clientX;
+      pointerY = event.clientY;
+    });
+
+    function chaseCursor() {
+      if (cat) {
+        catX += (pointerX - catX - 24) * 0.05;
+        catY += (pointerY - catY + 12) * 0.05;
+        const facing = pointerX < catX ? -1 : 1;
+        cat.style.transform = "translate3d(" + catX + "px, " + catY + "px, 0) scaleX(" + facing + ")";
+      }
+      window.requestAnimationFrame(chaseCursor);
+    }
+
+    chaseCursor();
+  </script>
+</BaseLayout>

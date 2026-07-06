@@ -1,0 +1,38 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SiteNav from "@/components/SiteNav.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import { currently, passions } from "@/data/personal";
+---
+
+<BaseLayout title="Personal" room="personal">
+  <main class="shell personal-shell">
+    <SiteNav />
+    <PageHeader
+      eyebrow="Personal room"
+      title="The softer, stranger, more alive side."
+      intro="A place for passions, notes, saved ideas, current obsessions, and the parts of a person that do not fit inside a resume."
+    />
+
+    <section class="personal-board" aria-label="Passions">
+      {
+        passions.map((item) => (
+          <article>
+            <h2>{item.title}</h2>
+            <p>{item.note}</p>
+          </article>
+        ))
+      }
+    </section>
+
+    <section class="currently-panel">
+      <div>
+        <p class="eyebrow">Currently</p>
+        <h2>Open loops</h2>
+      </div>
+      <ul>
+        {currently.map((item) => <li>{item}</li>)}
+      </ul>
+    </section>
+  </main>
+</BaseLayout>

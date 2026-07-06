@@ -1,0 +1,32 @@
+---
+import "../styles/global.css";
+import { site } from "@/data/site";
+
+type Props = {
+  title?: string;
+  description?: string;
+  room?: "home" | "work" | "personal" | "photo";
+};
+
+const {
+  title = site.name,
+  description = site.intro,
+  room = "home",
+} = Astro.props;
+
+const pageTitle = title === site.name ? title : `${title} | ${site.name}`;
+---
+
+<!doctype html>
+<html lang="en" data-room={room}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

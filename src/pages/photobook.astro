@@ -1,0 +1,158 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SiteNav from "@/components/SiteNav.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import { photosByYear } from "@/data/photos";
+
+const grouped = photosByYear();
+const years = Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a));
+---
+
+<BaseLayout title="Photobook" room="photo">
+  <main class="shell photo-shell">
+    <SiteNav />
+    <PageHeader
+      eyebrow="Photobook"
+      title="A yearly archive for images and tiny captions."
+      intro="Start with data-file photos for the public site. Use the form to test Google Drive links locally in your browser before adding them permanently."
+    />
+
+    <section class="photo-input-panel" aria-labelledby="photo-form-title">
+      <div>
+        <p class="eyebrow">Local tester</p>
+        <h2 id="photo-form-title">Paste a public image link</h2>
+        <p>
+          This saves only in this browser. To publish a photo for everyone, add it to
+          <code>src/data/photos.ts</code>.
+        </p>
+      </div>
+      <form id="photo-form" class="photo-form">
+        <label>
+          Year
+          <input name="year" type="number" min="2000" value="2026" required />
+        </label>
+        <label>
+          Image or Google Drive link
+          <input name="url" type="url" placeholder="https://drive.google.com/..." required />
+        </label>
+        <label>
+          Caption
+          <input name="caption" type="text" placeholder="What should this remember?" required />
+        </label>
+        <button type="submit">Add locally</button>
+      </form>
+    </section>
+
+    <section id="local-photos" class="local-photos" aria-live="polite"></section>
+
+    <section class="year-stack" aria-label="Photo archive">
+      {
+        years.map(([year, items]) => (
+          <section class="year-section">
+            <div class="year-heading">
+              <span>{year}</span>
+              <p>{items.length} memories</p>
+            </div>
+            <div class="photo-grid">
+              {items.map((photo) => (
+                <article class="photo-card">
+                  <img src={photo.url} alt={photo.title} loading="lazy" />
+                  <div>
+                    <h2>{photo.title}</h2>
+                    <p>{photo.caption}</p>
+                    {photo.location && <span>{photo.location}</span>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))
+      }
+    </section>
+  </main>
+
+  <script>
+    type LocalPhoto = {
+      year: number;
+      url: string;
+      caption: string;
+    };
+
+    const form = document.querySelector<HTMLFormElement>("#photo-form");
+    const mount = document.querySelector<HTMLElement>("#local-photos");
+    const storageKey = "teetas-space-local-photos";
+
+    function toGoogleDriveImageUrl(input: string) {
+      const trimmed = input.trim();
+
+      if (!trimmed.includes("drive.google.com")) {
+        return trimmed;
+      }
+
+      const fileId =
+        trimmed.match(/\/file\/d\/([^/]+)/)?.[1] ??
+        trimmed.match(/[?&]id=([^&]+)/)?.[1];
+
+      return fileId
+        ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`
+        : trimmed;
+    }
+
+    function getLocalPhotos() {
+      const raw = window.localStorage.getItem(storageKey);
+      return raw ? (JSON.parse(raw) as LocalPhoto[]) : [];
+    }
+
+    function saveLocalPhotos(photos: LocalPhoto[]) {
+      window.localStorage.setItem(storageKey, JSON.stringify(photos));
+    }
+
+    function renderLocalPhotos() {
+      if (!mount) return;
+
+      const photos = getLocalPhotos();
+      if (photos.length === 0) {
+        mount.innerHTML = "";
+        return;
+      }
+
+      mount.innerHTML = `
+        <div class="year-heading">
+          <span>Local</span>
+          <p>Only visible in this browser</p>
+        </div>
+        <div class="photo-grid">
+          ${photos
+            .map(
+              (photo) => `
+                <article class="photo-card">
+                  <img src="${photo.url}" alt="${photo.caption}" loading="lazy" />
+                  <div>
+                    <h2>${photo.year}</h2>
+                    <p>${photo.caption}</p>
+                    <span>Local draft</span>
+                  </div>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      `;
+    }
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      const nextPhoto = {
+        year: Number(data.get("year")),
+        url: toGoogleDriveImageUrl(String(data.get("url"))),
+        caption: String(data.get("caption")),
+      };
+      saveLocalPhotos([nextPhoto, ...getLocalPhotos()]);
+      form.reset();
+      renderLocalPhotos();
+    });
+
+    renderLocalPhotos();
+  </script>
+</BaseLayout>
