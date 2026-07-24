@@ -1,158 +1,459 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import SiteNav from "@/components/SiteNav.astro";
-import PageHeader from "@/components/PageHeader.astro";
-import { photosByYear } from "@/data/photos";
+import { photos } from "@/data/photos";
 
-const grouped = photosByYear();
-const years = Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a));
+const initialPhotos = photos.map((photo) => ({
+  id: photo.id ?? crypto.randomUUID(),
+  year: photo.year,
+  month: photo.month,
+  url: photo.url,
+  caption: photo.caption,
+  monthNote: photo.monthNote ?? "",
+  source: "seed",
+  createdAt: photo.createdAt ?? new Date(photo.year, photo.month - 1, 1).toISOString(),
+}));
 ---
 
 <BaseLayout title="Photobook" room="photo">
-  <main class="shell photo-shell">
-    <SiteNav />
-    <PageHeader
-      eyebrow="Photobook"
-      title="A yearly archive for images and tiny captions."
-      intro="Start with data-file photos for the public site. Use the form to test Google Drive links locally in your browser before adding them permanently."
-    />
+  <main class="photobook-room">
+    <section class="shell photobook-shell" aria-labelledby="photobook-title">
+      <a class="photo-back" href="/">back home</a>
 
-    <section class="photo-input-panel" aria-labelledby="photo-form-title">
-      <div>
-        <p class="eyebrow">Local tester</p>
-        <h2 id="photo-form-title">Paste a public image link</h2>
+      <header class="photobook-hero">
+        <p class="eyebrow">Photobook</p>
+        <h1 id="photobook-title">Little Photobook</h1>
         <p>
-          This saves only in this browser. To publish a photo for everyone, add it to
-          <code>src/data/photos.ts</code>.
+          Small memories, sorted by month. Click a photo to open it bigger.
         </p>
+      </header>
+
+      <section id="gallery-status" class="gallery-status" aria-live="polite">
+        Gathering memories...
+      </section>
+
+      <section id="photobook-gallery" class="photobook-gallery" aria-label="Photo gallery"></section>
+    </section>
+
+    <button class="photo-add-button" id="photo-add-button" type="button" aria-label="Add photo">
+      +
+    </button>
+
+    <div class="photo-modal" id="photo-modal" aria-hidden="true">
+      <div class="photo-modal__panel" role="dialog" aria-modal="true" aria-labelledby="photo-modal-title">
+        <button class="modal-close" type="button" data-close-modal aria-label="Close upload form">×</button>
+        <p class="eyebrow">Private uploader</p>
+        <h2 id="photo-modal-title">Add to photobook</h2>
+        <form class="photo-upload-form" id="photo-upload-form">
+          <label>
+            Admin PIN
+            <input name="pin" type="password" required autocomplete="current-password" placeholder="Enter PIN" />
+          </label>
+          <div class="form-row">
+            <label>
+              Month
+              <select name="month" required>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7" selected>July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </label>
+            <label>
+              Year
+              <input name="year" type="number" min="2000" max="2100" value="2026" required />
+            </label>
+          </div>
+          <label>
+            Month note
+            <input name="monthNote" type="text" placeholder="July 2026: birthdays and beers" />
+          </label>
+          <label>
+            Photo caption
+            <textarea name="caption" rows="3" placeholder="Small note for this photo"></textarea>
+          </label>
+          <label>
+            Google Drive or image link
+            <input name="url" type="url" placeholder="https://drive.google.com/..." />
+          </label>
+          <label>
+            Or upload a photo
+            <input name="file" type="file" accept="image/*" />
+          </label>
+          <button type="submit">Save photo</button>
+          <p class="upload-status" id="upload-status" aria-live="polite"></p>
+        </form>
       </div>
-      <form id="photo-form" class="photo-form">
-        <label>
-          Year
-          <input name="year" type="number" min="2000" value="2026" required />
-        </label>
-        <label>
-          Image or Google Drive link
-          <input name="url" type="url" placeholder="https://drive.google.com/..." required />
-        </label>
-        <label>
-          Caption
-          <input name="caption" type="text" placeholder="What should this remember?" required />
-        </label>
-        <button type="submit">Add locally</button>
-      </form>
-    </section>
+    </div>
 
-    <section id="local-photos" class="local-photos" aria-live="polite"></section>
+    <div class="photo-lightbox" id="photo-lightbox" aria-hidden="true">
+      <div class="photo-lightbox__panel" role="dialog" aria-modal="true" aria-label="Photo viewer">
+        <button class="modal-close" type="button" data-close-lightbox aria-label="Close photo">×</button>
+        <div class="lightbox-image-wrap">
+          <img id="lightbox-image" src="" alt="" />
+        </div>
+        <div class="lightbox-footer">
+          <div>
+            <h2 id="lightbox-date"></h2>
+            <p id="lightbox-caption"></p>
+          </div>
+          <div class="lightbox-actions">
+            <div class="zoom-controls" aria-label="Zoom controls">
+              <button type="button" data-zoom-out>-</button>
+              <button type="button" data-zoom-reset>reset</button>
+              <button type="button" data-zoom-in>+</button>
+            </div>
+            <div class="photo-more-menu">
+              <button class="more-button" type="button" data-toggle-delete-menu aria-expanded="false" aria-label="Photo options">...</button>
+              <div class="delete-popover" data-delete-menu aria-hidden="true">
+                <label for="delete-pin">PIN to delete</label>
+                <div class="delete-controls" aria-label="Delete photo">
+                  <input id="delete-pin" type="password" placeholder="1029" autocomplete="current-password" />
+                  <button type="button" data-delete-photo>Delete photo</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <section class="year-stack" aria-label="Photo archive">
-      {
-        years.map(([year, items]) => (
-          <section class="year-section">
-            <div class="year-heading">
-              <span>{year}</span>
-              <p>{items.length} memories</p>
-            </div>
-            <div class="photo-grid">
-              {items.map((photo) => (
-                <article class="photo-card">
-                  <img src={photo.url} alt={photo.title} loading="lazy" />
-                  <div>
-                    <h2>{photo.title}</h2>
-                    <p>{photo.caption}</p>
-                    {photo.location && <span>{photo.location}</span>}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ))
-      }
-    </section>
+    <script is:inline id="initial-photos" type="application/json" set:html={JSON.stringify(initialPhotos)} />
   </main>
 
   <script>
-    type LocalPhoto = {
+    type GalleryPhoto = {
+      id: string;
       year: number;
+      month: number;
       url: string;
       caption: string;
+      monthNote?: string;
+      source?: string;
+      createdAt?: string;
     };
 
-    const form = document.querySelector<HTMLFormElement>("#photo-form");
-    const mount = document.querySelector<HTMLElement>("#local-photos");
-    const storageKey = "teetas-space-local-photos";
+    const apiPath = "/.netlify/functions/photos";
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    const gallery = document.querySelector<HTMLElement>("#photobook-gallery");
+    const status = document.querySelector<HTMLElement>("#gallery-status");
+    const addButton = document.querySelector<HTMLButtonElement>("#photo-add-button");
+    const modal = document.querySelector<HTMLElement>("#photo-modal");
+    const form = document.querySelector<HTMLFormElement>("#photo-upload-form");
+    const uploadStatus = document.querySelector<HTMLElement>("#upload-status");
+    const lightbox = document.querySelector<HTMLElement>("#photo-lightbox");
+    const lightboxImage = document.querySelector<HTMLImageElement>("#lightbox-image");
+    const lightboxDate = document.querySelector<HTMLElement>("#lightbox-date");
+    const lightboxCaption = document.querySelector<HTMLElement>("#lightbox-caption");
+    const deletePin = document.querySelector<HTMLInputElement>("#delete-pin");
+    const deleteButton = document.querySelector<HTMLButtonElement>("[data-delete-photo]");
+    const deleteMenu = document.querySelector<HTMLElement>("[data-delete-menu]");
+    const deleteMenuButton = document.querySelector<HTMLButtonElement>("[data-toggle-delete-menu]");
+    let activePhotos: GalleryPhoto[] = [];
+    let activePhoto: GalleryPhoto | null = null;
+    let zoom = 1;
+
+    function getInitialPhotos() {
+      const source = document.querySelector<HTMLScriptElement>("#initial-photos");
+      if (!source?.textContent) return [];
+      return JSON.parse(source.textContent) as GalleryPhoto[];
+    }
 
     function toGoogleDriveImageUrl(input: string) {
       const trimmed = input.trim();
-
-      if (!trimmed.includes("drive.google.com")) {
-        return trimmed;
-      }
-
+      if (!trimmed.includes("drive.google.com")) return trimmed;
       const fileId =
         trimmed.match(/\/file\/d\/([^/]+)/)?.[1] ??
         trimmed.match(/[?&]id=([^&]+)/)?.[1];
-
-      return fileId
-        ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w1200`
-        : trimmed;
+      return fileId ? "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w1600" : trimmed;
     }
 
-    function getLocalPhotos() {
-      const raw = window.localStorage.getItem(storageKey);
-      return raw ? (JSON.parse(raw) as LocalPhoto[]) : [];
+    function monthKey(photo: GalleryPhoto) {
+      return String(photo.year) + "-" + String(photo.month).padStart(2, "0");
     }
 
-    function saveLocalPhotos(photos: LocalPhoto[]) {
-      window.localStorage.setItem(storageKey, JSON.stringify(photos));
+    function formatMonth(year: number, month: number) {
+      return monthNames[month - 1] + " " + year;
     }
 
-    function renderLocalPhotos() {
-      if (!mount) return;
+    function sortPhotos(photos: GalleryPhoto[]) {
+      return [...photos].sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year;
+        if (b.month !== a.month) return b.month - a.month;
+        return String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? ""));
+      });
+    }
 
-      const photos = getLocalPhotos();
-      if (photos.length === 0) {
-        mount.innerHTML = "";
+    function groupedPhotos(photos: GalleryPhoto[]) {
+      const groups = new Map<string, GalleryPhoto[]>();
+      sortPhotos(photos).forEach((photo) => {
+        const key = monthKey(photo);
+        groups.set(key, [...(groups.get(key) ?? []), photo]);
+      });
+      return [...groups.entries()];
+    }
+
+    function renderGallery(photos: GalleryPhoto[]) {
+      if (!gallery) return;
+      activePhotos = sortPhotos(photos);
+      const groups = groupedPhotos(activePhotos);
+
+      if (status) {
+        status.textContent = activePhotos.length > 0
+          ? String(activePhotos.length) + " photos saved across " + String(groups.length) + " months."
+          : "No photos yet.";
+      }
+
+      gallery.replaceChildren();
+
+      groups.forEach(([, items]) => {
+        const first = items[0];
+        const section = document.createElement("section");
+        section.className = "month-gallery";
+
+        const header = document.createElement("header");
+        header.className = "month-gallery__header";
+
+        const headerText = document.createElement("div");
+        const title = document.createElement("span");
+        title.textContent = formatMonth(first.year, first.month);
+        headerText.append(title);
+
+        if (first.monthNote) {
+          const note = document.createElement("p");
+          note.textContent = first.monthNote;
+          headerText.append(note);
+        }
+
+        const count = document.createElement("small");
+        count.textContent = String(items.length) + " photos";
+        header.append(headerText, count);
+
+        const grid = document.createElement("div");
+        grid.className = "memory-grid";
+
+        items.forEach((photo) => {
+          const index = activePhotos.findIndex((item) => item.id === photo.id);
+          const button = document.createElement("button");
+          button.className = "memory-photo";
+          button.type = "button";
+          button.dataset.photoIndex = String(index);
+
+          const image = document.createElement("img");
+          image.src = photo.url;
+          image.alt = photo.caption || formatMonth(photo.year, photo.month);
+          image.loading = "lazy";
+
+          const caption = document.createElement("span");
+          caption.textContent = photo.caption || "Open photo";
+          button.append(image, caption);
+          grid.append(button);
+        });
+
+        section.append(header, grid);
+        gallery.append(section);
+      });
+    }
+
+    async function readJsonResponse(response: Response) {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Uploads need Netlify Functions. Test this on the deployed Netlify site or run the app with Netlify Dev, not plain Astro dev.");
+      }
+      return response.json();
+    }
+
+    async function loadPhotos() {
+      const initial = getInitialPhotos();
+      try {
+        const response = await fetch(apiPath, { headers: { accept: "application/json" } });
+        if (!response.ok) throw new Error("Function unavailable");
+        const data = await readJsonResponse(response);
+        const remote = Array.isArray(data.photos) ? data.photos : [];
+        renderGallery([...remote, ...initial]);
+      } catch {
+        renderGallery(initial);
+        if (status) status.textContent = "A few tiny memories to start with.";
+      }
+    }
+
+    async function compressImage(file: File) {
+      const image = new Image();
+      const source = URL.createObjectURL(file);
+      image.src = source;
+      await image.decode();
+
+      const maxSide = 1600;
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Could not prepare image.");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(source);
+      return canvas.toDataURL("image/jpeg", 0.84);
+    }
+
+    function openModal() {
+      modal?.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+    }
+
+    function closeModal() {
+      modal?.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+    }
+
+    function openLightbox(photo: GalleryPhoto) {
+      if (!lightbox || !lightboxImage || !lightboxDate || !lightboxCaption) return;
+      zoom = 1;
+      lightboxImage.src = photo.url;
+      lightboxImage.alt = photo.caption || formatMonth(photo.year, photo.month);
+      lightboxImage.style.transform = "scale(1)";
+      lightboxDate.textContent = formatMonth(photo.year, photo.month);
+      lightboxCaption.textContent = photo.caption || "";
+      activePhoto = photo;
+      if (deletePin) deletePin.value = "";
+      closeDeleteMenu();
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+    }
+
+    function closeLightbox() {
+      lightbox?.setAttribute("aria-hidden", "true");
+      activePhoto = null;
+      closeDeleteMenu();
+      document.body.classList.remove("modal-open");
+    }
+
+    function openDeleteMenu() {
+      deleteMenu?.setAttribute("aria-hidden", "false");
+      deleteMenuButton?.setAttribute("aria-expanded", "true");
+      deletePin?.focus();
+    }
+
+    function closeDeleteMenu() {
+      deleteMenu?.setAttribute("aria-hidden", "true");
+      deleteMenuButton?.setAttribute("aria-expanded", "false");
+    }
+
+    addButton?.addEventListener("click", openModal);
+    document.querySelectorAll<HTMLElement>("[data-close-modal]").forEach((button) => button.addEventListener("click", closeModal));
+    document.querySelectorAll<HTMLElement>("[data-close-lightbox]").forEach((button) => button.addEventListener("click", closeLightbox));
+
+    gallery?.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-photo-index]");
+      if (!button) return;
+      const photo = activePhotos[Number(button.dataset.photoIndex)];
+      if (photo) openLightbox(photo);
+    });
+
+    document.querySelector<HTMLElement>("[data-zoom-in]")?.addEventListener("click", () => {
+      zoom = Math.min(2.5, zoom + 0.25);
+      if (lightboxImage) lightboxImage.style.transform = "scale(" + zoom + ")";
+    });
+
+    document.querySelector<HTMLElement>("[data-zoom-out]")?.addEventListener("click", () => {
+      zoom = Math.max(1, zoom - 0.25);
+      if (lightboxImage) lightboxImage.style.transform = "scale(" + zoom + ")";
+    });
+
+    document.querySelector<HTMLElement>("[data-zoom-reset]")?.addEventListener("click", () => {
+      zoom = 1;
+      if (lightboxImage) lightboxImage.style.transform = "scale(1)";
+    });
+
+    deleteMenuButton?.addEventListener("click", () => {
+      if (deleteMenu?.getAttribute("aria-hidden") === "false") {
+        closeDeleteMenu();
+      } else {
+        openDeleteMenu();
+      }
+    });
+
+    deleteButton?.addEventListener("click", async () => {
+      if (!activePhoto || !deletePin) return;
+      const pin = deletePin.value.trim();
+      if (!pin) {
+        lightboxCaption && (lightboxCaption.textContent = "Enter the PIN to delete this photo.");
         return;
       }
 
-      mount.innerHTML = `
-        <div class="year-heading">
-          <span>Local</span>
-          <p>Only visible in this browser</p>
-        </div>
-        <div class="photo-grid">
-          ${photos
-            .map(
-              (photo) => `
-                <article class="photo-card">
-                  <img src="${photo.url}" alt="${photo.caption}" loading="lazy" />
-                  <div>
-                    <h2>${photo.year}</h2>
-                    <p>${photo.caption}</p>
-                    <span>Local draft</span>
-                  </div>
-                </article>
-              `,
-            )
-            .join("")}
-        </div>
-      `;
-    }
+      const confirmed = window.confirm("Delete this photo from the photobook?");
+      if (!confirmed) return;
 
-    form?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = new FormData(form);
-      const nextPhoto = {
-        year: Number(data.get("year")),
-        url: toGoogleDriveImageUrl(String(data.get("url"))),
-        caption: String(data.get("caption")),
-      };
-      saveLocalPhotos([nextPhoto, ...getLocalPhotos()]);
-      form.reset();
-      renderLocalPhotos();
+      try {
+        const response = await fetch(apiPath + "?id=" + encodeURIComponent(activePhoto.id), {
+          method: "DELETE",
+          headers: { "x-admin-pin": pin },
+        });
+        const result = await readJsonResponse(response);
+        if (!response.ok) throw new Error(result.error ?? "Could not delete photo.");
+        renderGallery(result.photos as GalleryPhoto[]);
+        closeLightbox();
+      } catch (error) {
+        lightboxCaption && (lightboxCaption.textContent = error instanceof Error ? error.message : "Could not delete photo.");
+      }
     });
 
-    renderLocalPhotos();
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!form || !uploadStatus) return;
+      const data = new FormData(form);
+      const pin = String(data.get("pin") ?? "");
+      const file = data.get("file");
+      const link = String(data.get("url") ?? "").trim();
+      let source = "link";
+      let url = toGoogleDriveImageUrl(link);
+
+      try {
+        uploadStatus.textContent = "Saving...";
+        if (file instanceof File && file.size > 0) {
+          source = "upload";
+          url = await compressImage(file);
+        }
+
+        if (!url) throw new Error("Add a Google Drive link or choose a photo file.");
+
+        const response = await fetch(apiPath, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-admin-pin": pin,
+          },
+          body: JSON.stringify({
+            year: Number(data.get("year")),
+            month: Number(data.get("month")),
+            monthNote: String(data.get("monthNote") ?? ""),
+            caption: String(data.get("caption") ?? ""),
+            source,
+            url,
+          }),
+        });
+
+        const result = await readJsonResponse(response);
+        if (!response.ok) throw new Error(result.error ?? "Could not save photo.");
+        renderGallery(result.photos as GalleryPhoto[]);
+        uploadStatus.textContent = "Saved.";
+        form.reset();
+        window.setTimeout(closeModal, 500);
+      } catch (error) {
+        uploadStatus.textContent = error instanceof Error ? error.message : "Could not save photo.";
+      }
+    });
+
+    loadPhotos();
   </script>
 </BaseLayout>

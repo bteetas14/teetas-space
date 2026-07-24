@@ -7,15 +7,16 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "dev:netlify": "netlify dev"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
+    "@netlify/blobs": "^10.7.9",
     "@tailwindcss/vite": "^4.0.0",
     "astro": "^5.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0"
   },
-  "devDependencies": {},
   "packageManager": "pnpm@11.7.0"
 }

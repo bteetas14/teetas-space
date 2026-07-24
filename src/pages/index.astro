@@ -17,6 +17,13 @@ import { rooms } from "@/data/site";
       <div class="work-door__panel work-door__panel-right"></div>
       <span>entering work room</span>
     </div>
+    <div class="rain-transition" aria-hidden="true">
+      <div class="rain-transition__cloud rain-transition__cloud-one"></div>
+      <div class="rain-transition__cloud rain-transition__cloud-two"></div>
+      <div class="rain-transition__fall rain-transition__fall-one"></div>
+      <div class="rain-transition__fall rain-transition__fall-two"></div>
+      <span>rain incoming</span>
+    </div>
     <div class="cursor-cat" aria-hidden="true">
       <div class="cat-tail"></div>
       <div class="cat-body"></div>
@@ -72,13 +79,24 @@ import { rooms } from "@/data/site";
       });
 
       card.addEventListener("click", (event) => {
-        if (card.dataset.roomTheme !== "work") return;
-        event.preventDefault();
-        stage?.classList.add("is-opening-work");
-        window.sessionStorage.setItem("teetas-entering-work", "true");
-        window.setTimeout(() => {
-          window.location.href = card.getAttribute("href") ?? "/work";
-        }, 320);
+        if (card.dataset.roomTheme === "work") {
+          event.preventDefault();
+          stage?.classList.add("is-opening-work");
+          window.sessionStorage.setItem("teetas-entering-work", "true");
+          window.setTimeout(() => {
+            window.location.href = card.getAttribute("href") ?? "/work";
+          }, 320);
+          return;
+        }
+
+        if (card.dataset.roomTheme === "personal") {
+          event.preventDefault();
+          stage?.classList.add("is-raining-personal");
+          window.sessionStorage.setItem("teetas-entering-personal", "true");
+          window.setTimeout(() => {
+            window.location.href = card.getAttribute("href") ?? "/personal";
+          }, 520);
+        }
       });
     });
 

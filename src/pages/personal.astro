@@ -5,6 +5,12 @@ import { currently, passions } from "@/data/personal";
 
 <BaseLayout title="Personal" room="personal">
   <main class="personal-rain-room">
+    <div class="rain-arrival" aria-hidden="true">
+      <div class="rain-arrival__cloud rain-arrival__cloud-one"></div>
+      <div class="rain-arrival__cloud rain-arrival__cloud-two"></div>
+      <div class="rain-arrival__fall rain-arrival__fall-one"></div>
+      <div class="rain-arrival__fall rain-arrival__fall-two"></div>
+    </div>
     <div class="rain-sky" aria-hidden="true">
       <div class="cloud cloud-one"></div>
       <div class="cloud cloud-two"></div>
@@ -66,4 +72,11 @@ import { currently, passions } from "@/data/personal";
       </section>
     </section>
   </main>
+  <script>
+    const personalRoom = document.querySelector<HTMLElement>(".personal-rain-room");
+    if (window.sessionStorage.getItem("teetas-entering-personal") === "true") {
+      window.sessionStorage.removeItem("teetas-entering-personal");
+      personalRoom?.classList.add("is-arriving-personal");
+    }
+  </script>
 </BaseLayout>
